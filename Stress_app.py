@@ -43,11 +43,37 @@ def classify_risk(score):
     else:
         return "High Risk"
 
+# Suggestions for each level
+def get_suggestions(risk_level):
+    if risk_level == "Low Risk":
+        return [
+            "👍 Keep maintaining a healthy balance between study and rest.",
+            "💤 Ensure consistent sleep (7–8 hrs) to remain stress-free.",
+            "🏃 Stay active with light physical exercise or walking.",
+            "🤝 Continue engaging in social and family activities."
+        ]
+    elif risk_level == "Moderate Risk":
+        return [
+            "📅 Try making a daily study plan to avoid last-minute stress.",
+            "🧘 Practice relaxation techniques like deep breathing or meditation.",
+            "🍎 Maintain proper meals and avoid skipping food during busy days.",
+            "📞 Talk to friends or mentors when feeling overwhelmed."
+        ]
+    else:  # High Risk
+        return [
+            "🚨 Prioritize mental health—consider reaching out to a counselor.",
+            "💡 Break study sessions into smaller chunks with breaks.",
+            "🛌 Improve sleep hygiene: fixed bedtime, no screens before sleep.",
+            "⚡ Limit caffeine and energy drinks, replace with water or healthy alternatives.",
+            "🏃 Engage in regular exercise to reduce stress hormones.",
+            "🤝 Seek emotional support from family/friends without hesitation."
+        ]
+
 # ==================================================
 # Streamlit UI
 # ==================================================
 st.title("🎓 Student Stress Prediction App")
-st.write("Enter student details below and get stress prediction with risk classification.")
+st.write("Enter student details below and get stress prediction with risk classification & suggestions.")
 
 # ------------------------------
 # Student Details Section
@@ -67,7 +93,7 @@ bev = st.selectbox("Beverage Intake", encoder_dict["Beverage intake"].classes_)
 # ------------------------------
 # Survey Questions Section
 # ------------------------------
-st.header("📝 Survey Questions")
+st.header("📝 Survey Questions (Yes = 1, No = 0)")
 
 qs_labels = [
     "Q1. Do you feel academic pressure?",
@@ -86,7 +112,10 @@ qs = []
 cols = st.columns(2)  # two columns for better readability
 for i, q in enumerate(qs_labels):
     with cols[i % 2]:
-        qs.append(st.number_input(q, min_value=0, max_value=1, value=1, key=f"Q{i+1}"))
+        qs.append(st.selectbox(q, ["No", "Yes"], key=f"Q{i+1}"))
+
+# Encode Yes/No to 1/0
+qs_encoded = [1 if ans == "Yes" else 0 for ans in qs]
 
 # Prepare input
 new_student = pd.DataFrame([{
@@ -99,7 +128,7 @@ new_student = pd.DataFrame([{
     "meals_per_day": meals,
     "Physical activity": encoder_dict["Physical activity"].transform([phy])[0],
     "Beverage intake": encoder_dict["Beverage intake"].transform([bev])[0],
-    **{f"Q{i+1}": qs[i] for i in range(10)}
+    **{f"Q{i+1}": qs_encoded[i] for i in range(10)}
 }])
 
 # ------------------------------
@@ -112,3 +141,9 @@ if st.button("🔮 Predict Stress"):
     st.subheader("📊 Prediction Results")
     st.success(f"**Predicted Stress Score:** {pred_score:.2f}")
     st.info(f"**Risk Classification:** {pred_risk}")
+
+    # Suggestions
+    st.subheader("💡 Suggestions")
+    suggestions = get_suggestions(pred_risk)
+    for s in suggestions:
+        st.write("- " + s)
